@@ -2124,7 +2124,7 @@
       name:"National Arts Centre",
       points:[{lat:45.423273, lon:-75.694600, bearing:172}, {lat:45.422655, lon:-75.693956, bearing:211}, {lat:45.422691, lon:-75.693482, bearing:226}, {lat:45.422715, lon:-75.693397, bearing:186}, {lat:45.423210, lon:-75.692178, bearing:240}, {lat:45.423345, lon:-75.692207, bearing:273}, {lat:45.423673, lon:-75.692901, bearing:319, note:"Upper-level outdoor terrace of the NAC; view of the Peace Tower, Union Station, Chateau Laurier and the Rideau Canal. Planned proximity-triggered extra with its own photo."}, {lat:45.423501, lon:-75.692965, bearing:170}, {lat:45.423824, lon:-75.693886, bearing:70}, {lat:45.423618, lon:-75.694330, bearing:268}, {lat:45.423450, lon:-75.694612, bearing:276}],
       connectPoints:true,
-      radius:35,
+      radius:15,
       blurb:"Bilingual home of Canada's National Arts Centre, at the corner of Elgin and Confederation Square.",
       script:"The National Arts Centre opened in 1969 as a centennial project, built to give Canada's capital a home for orchestral music, opera, dance, and both English and French theatre under one roof — its bilingual name is carved right into the entrance. The original Brutalist concrete building was reworked in 2017 with this glass and bronze-toned addition, opening the centre up to the street with a soaring atrium and the illuminated Kipnes Lantern signage you can see facing the square. The NAC Orchestra, the country's only full-time bilingual orchestra, performs here.",
       photoQuery:"National Arts Centre Ottawa building",
@@ -2408,6 +2408,7 @@
       maxZoom: 19
     }).addTo(state.map);
 
+    state.bufferBands = [];
     LOCATIONS.forEach(loc => {
       const pts = loc.points;
       const onClick = () => openStop(loc.id, {forcedNear:true});
@@ -2427,28 +2428,39 @@
         });
       } else {
         // Geofencing on, 2+ points: 2 points = a line segment (open); 3+ = a
-        // closed polygon. Either way we also draw a buffer circle at every
-        // vertex so the proximity tolerance from the nearest point/edge is
-        // visible on the map, since we don't compute a true offset/rounded
-        // buffer shape here.
+        // closed polygon. The proximity tolerance is drawn as ONE soft band
+        // hugging the outline (a single wide translucent stroke whose width
+        // tracks the zoom level), instead of a circle at every vertex, so
+        // overlapping circles don't pile up and clutter the map.
         const latlngs = pts.map(p => [p.lat, p.lon]);
+        const bandPath = pts.length === 2 ? latlngs : latlngs.concat([latlngs[0]]);
+        const band = L.polyline(bandPath, {
+          color:"#a3752c", weight:2, opacity:0.16, lineCap:"round", lineJoin:"round", interactive:false
+        }).addTo(state.map);
+        state.bufferBands.push({layer:band, radius:loc.radius});
         const outline = pts.length === 2
           ? L.polyline(latlngs, {color:"#7d5a20", weight:3, opacity:0.85}).addTo(state.map).bindPopup(localized(loc, "name"))
           : L.polygon(latlngs, {color:"#7d5a20", weight:2, fillColor:"#a3752c", fillOpacity:0.18}).addTo(state.map).bindPopup(localized(loc, "name"));
         outline.on("click", onClick);
         pts.forEach(p => {
-          const buf = L.circle([p.lat, p.lon], {
-            radius: loc.radius, color:"#7d5a20", weight:1, fillColor:"#a3752c", fillOpacity:0.10
-          }).addTo(state.map);
           const dot = L.circleMarker([p.lat, p.lon], {
-            radius:4, color:"#7d5a20", weight:1.5, fillColor:"#a3752c", fillOpacity:0.95
+            radius:3, color:"#7d5a20", weight:1.5, fillColor:"#a3752c", fillOpacity:0.95
           }).addTo(state.map);
-          buf.on("click", onClick);
           dot.on("click", onClick);
         });
         state.stopMarkers[loc.id] = outline;
       }
     });
+
+    // Keep each buffer band's pixel width equal to 2 x its radius in metres at the current zoom.
+    const sizeBands = () => {
+      const z = state.map.getZoom();
+      const lat = state.map.getCenter().lat;
+      const mPerPx = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, z);
+      state.bufferBands.forEach(b => b.layer.setStyle({weight: Math.max(2, (2 * b.radius) / mPerPx)}));
+    };
+    state.map.on("zoom zoomend moveend", sizeBands);
+    sizeBands();
 
     const arrowSvg = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L18 20 L12 16 L6 20 Z" fill="#a13d2c" stroke="#1c2b2c" stroke-width="1"/></svg>`;
     state.headingIcon = L.divIcon({

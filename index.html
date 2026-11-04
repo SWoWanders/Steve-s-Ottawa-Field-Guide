@@ -3738,28 +3738,43 @@
 
   /* ---------- Wikimedia Commons photo lookup (free, keyless, CORS-enabled) ---------- */
   const photoCache = {};
+  const PHOTO_STOPWORDS = new Set(["street","avenue","west","east","north","south","with","from","ontario","centre","center"]);
+  const PHOTO_JUNK = /(test[ _-]?target|image[ _-]?evaluation|\bMT-?3\b|front[ _-]?cover|back[ _-]?cover|\bcover\b|title[ _-]?page|\bpage[ _-]?\d|\bscan\b|\.(pdf|djvu|tiff?|svg|ogg|webm|mp3|gif)$|\bmap of\b|\blogo\b|\bflag of\b)/i;
+  // A web photo is accepted only if its file title shares distinctive words with the stop's search query
+  function photoTitleOk(query, title){
+    if (PHOTO_JUNK.test(title)) return false;
+    const norm = x => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]+/g," ");
+    const words = norm(query).split(/\s+/).filter(w => w.length >= 4 && !PHOTO_STOPWORDS.has(w));
+    if (!words.length) return false;
+    const t = " " + norm(title.replace(/^File:/i,"")) + " ";
+    const hits = words.filter(w => t.includes(" " + w) ).length;
+    const need = words.length >= 5 ? 3 : (words.length >= 3 ? 2 : 1);
+    return hits >= need;
+  }
   async function fetchHistoricPhoto(query){
     if (photoCache[query] !== undefined) return photoCache[query];
     try {
-      const searchUrl = "https://commons.wikimedia.org/w/api.php?action=query&list=search&srnamespace=6&srlimit=1&format=json&origin=*&srsearch=" + encodeURIComponent(query);
+      const searchUrl = "https://commons.wikimedia.org/w/api.php?action=query&list=search&srnamespace=6&srlimit=8&format=json&origin=*&srsearch=" + encodeURIComponent(query);
       const searchRes = await fetch(searchUrl);
       const searchData = await searchRes.json();
-      const hit = searchData?.query?.search?.[0];
-      if (!hit){ photoCache[query] = null; return null; }
-      const title = hit.title;
-      const infoUrl = "https://commons.wikimedia.org/w/api.php?action=query&titles=" + encodeURIComponent(title) +
-        "&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=900&format=json&origin=*";
-      const infoRes = await fetch(infoUrl);
-      const infoData = await infoRes.json();
-      const pages = infoData?.query?.pages;
-      const page = pages ? Object.values(pages)[0] : null;
-      const info = page?.imageinfo?.[0];
-      if (!info){ photoCache[query] = null; return null; }
-      const url = info.thumburl || info.url;
-      const artist = info.extmetadata?.Artist?.value?.replace(/<[^>]+>/g,"") || "Wikimedia Commons";
-      const result = {url, credit: artist};
-      photoCache[query] = result;
-      return result;
+      const hits = (searchData?.query?.search || []).filter(h => photoTitleOk(query, h.title)).slice(0, 3);
+      for (const hit of hits){
+        const infoUrl = "https://commons.wikimedia.org/w/api.php?action=query&titles=" + encodeURIComponent(hit.title) +
+          "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=900&format=json&origin=*";
+        const infoRes = await fetch(infoUrl);
+        const infoData = await infoRes.json();
+        const pages = infoData?.query?.pages;
+        const page = pages ? Object.values(pages)[0] : null;
+        const info = page?.imageinfo?.[0];
+        if (!info || !/^image\/(jpeg|png|webp)$/.test(info.mime || "")) continue;
+        const url = info.thumburl || info.url;
+        const artist = info.extmetadata?.Artist?.value?.replace(/<[^>]+>/g,"") || "Wikimedia Commons";
+        const result = {url, credit: artist};
+        photoCache[query] = result;
+        return result;
+      }
+      photoCache[query] = null;
+      return null;
     } catch(e){
       photoCache[query] = null;
       return null;

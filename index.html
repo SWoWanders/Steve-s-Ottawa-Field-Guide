@@ -2717,6 +2717,7 @@
       blurb:"A bronze relief map of downtown Ottawa and Confederation Boulevard, with a bilingual key to 27 sites.",
       script:"This bronze model is a three-dimensional map of downtown Ottawa and Confederation Boulevard, the ceremonial route that loops around the downtown cores of Ottawa and Gatineau, crossing the Ottawa River. The National Capital Commission placed it here in front of Library and Archives Canada. You can see the street grid, the Parliament Buildings and the river, raised in relief, and you're welcome to run your hand over it. The plaque beside it is bilingual and lists twenty-seven numbered sites along the route, from Parliament Hill and the Supreme Court to the National Gallery and the ByWard Market. It also marks where you are standing, and shows what a ten-minute walk looks like. Use it to plan where to go next.",
       photoQuery:"Confederation Boulevard bronze map Ottawa Wellington Bay",
+      noWebPhoto:true,
       faceBearing:275, faceLabel:"the bronze map"
     },
     {
@@ -3561,6 +3562,7 @@
     document.getElementById("overlayTitle").textContent = localizedExtra(ex, "name");
     document.getElementById("overlayText").textContent = localizedExtra(ex, "script");
     const img = document.getElementById("overlayPhoto");
+    img.style.display = ""; document.getElementById("overlayCredit").style.display = "";
     img.classList.remove("is-portrait");
     img.src = EXTRA_PHOTOS[id] || "";
     document.getElementById("overlayCredit").textContent = "";
@@ -3646,8 +3648,12 @@
     const credit = document.getElementById("overlayCredit");
     img.src = "";
     img.classList.remove("is-portrait");
-    credit.textContent = t("lookingForPhoto");
-    fetchHistoricPhoto(loc.photoQuery).then(res => {
+    // stops flagged noWebPhoto show only the user's own snapshot (no web photo)
+    img.style.display = loc.noWebPhoto ? "none" : "";
+    credit.style.display = loc.noWebPhoto ? "none" : "";
+    credit.textContent = loc.noWebPhoto ? "" : t("lookingForPhoto");
+    (loc.noWebPhoto ? Promise.resolve("skip") : fetchHistoricPhoto(loc.photoQuery)).then(res => {
+      if (res === "skip") return;
       if (res){
         img.src = res.url;
         applyPhotoOrientation(img);

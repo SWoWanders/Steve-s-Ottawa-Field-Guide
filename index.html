@@ -310,6 +310,14 @@
   <div class="section-label" id="nearestToYouLabel">Nearest to you</div>
   <p class="empty-note" style="margin:-6px 0 10px;" id="distanceDisclaimerText">Distances and arrows below are straight-line, not walking directions — stick to sidewalks and crosswalks.</p>
   <div id="stopList"></div>
+  <!-- TEMPORARY builder tool: collects the current online-photo addresses so they can be locked into the file -->
+  <details id="builderLock" style="margin-top:18px;">
+    <summary class="empty-note" style="cursor:pointer;">Builder: lock photos</summary>
+    <p class="empty-note">Collects each checked stop's current online photo address. Wait for it to finish, then paste the result into the chat.</p>
+    <button class="ghost" id="btnCollectPhotos">Collect photo addresses</button>
+    <textarea id="lockOutput" rows="6" style="width:100%;margin-top:8px;font-size:11px;" readonly></textarea>
+    <button class="ghost" id="btnCopyLock" style="margin-top:6px;">Copy</button>
+  </details>
 </main>
 
 <div class="bottom-bar">
@@ -3692,7 +3700,7 @@
     img.style.display = loc.noWebPhoto ? "none" : "";
     credit.style.display = loc.noWebPhoto ? "none" : "";
     credit.textContent = loc.noWebPhoto ? "" : t("lookingForPhoto");
-    (loc.noWebPhoto ? Promise.resolve("skip") : (loc.photoVerified ? fetchHistoricPhotoVerified(loc.photoQuery) : fetchHistoricPhoto(loc.photoQuery))).then(res => {
+    (loc.noWebPhoto ? Promise.resolve("skip") : (Object.prototype.hasOwnProperty.call(LOCKED_PHOTOS, loc.id) ? Promise.resolve(LOCKED_PHOTOS[loc.id]) : (loc.photoVerified ? fetchHistoricPhotoVerified(loc.photoQuery) : fetchHistoricPhoto(loc.photoQuery)))).then(res => {
       if (res === "skip") return;
       if (res){
         img.src = res.url;
@@ -3775,6 +3783,8 @@
 
   /* ---------- Wikimedia Commons photo lookup (free, keyless, CORS-enabled) ---------- */
   const photoCache = {};
+  /* Photo addresses locked in by the builder (id -> {url, credit}, or null for no photo). Overrides any online lookup. */
+  const LOCKED_PHOTOS = {};
   const PHOTO_STOPWORDS = new Set(["street","avenue","west","east","north","south","with","from","ontario","centre","center"]);
   const PHOTO_JUNK = /(test[ _-]?target|image[ _-]?evaluation|\bMT-?3\b|front[ _-]?cover|back[ _-]?cover|\bcover\b|title[ _-]?page|\bpage[ _-]?\d|\bscan\b|\.(pdf|djvu|tiff?|svg|ogg|webm|mp3|gif)$|\bmap of\b|\blogo\b|\bflag of\b)/i;
   // A web photo is accepted only if its file title shares distinctive words with the stop's search query
@@ -4379,6 +4389,23 @@
 
     document.getElementById("btnWake").addEventListener("click", toggleWakeLock);
     document.getElementById("btnRecordSpot").addEventListener("click", () => openCapture());
+    document.getElementById("btnCollectPhotos").addEventListener("click", async () => {
+      const out = document.getElementById("lockOutput");
+      const targets = LOCATIONS.filter(l => l.photoVerified && !l.noWebPhoto && !Object.prototype.hasOwnProperty.call(LOCKED_PHOTOS, l.id));
+      const res = {};
+      for (let i = 0; i < targets.length; i++){
+        out.value = "Working… " + (i + 1) + " / " + targets.length;
+        const r = await fetchHistoricPhotoVerified(targets[i].photoQuery);
+        res[targets[i].id] = r ? {url:r.url, credit:r.credit} : null;
+      }
+      out.value = JSON.stringify(res);
+      try { await navigator.clipboard.writeText(out.value); toast("Copied " + targets.length + " photo addresses"); } catch(e){ toast("Done — tap Copy"); }
+    });
+    document.getElementById("btnCopyLock").addEventListener("click", async () => {
+      const out = document.getElementById("lockOutput");
+      out.select();
+      try { await navigator.clipboard.writeText(out.value); toast("Copied"); } catch(e){ toast("Select and copy manually"); }
+    });
     document.getElementById("btnAddPoi").addEventListener("click", togglePickMode);
     document.getElementById("btnCancelPick").addEventListener("click", () => cancelPickMode());
     document.getElementById("btnFixLocation").addEventListener("click", () => {

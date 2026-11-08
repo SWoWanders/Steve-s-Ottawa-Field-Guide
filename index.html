@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Archivo+Black&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper: #e6e0c9;
@@ -215,11 +216,11 @@
   .next-target .nt-text{font-size:0.85rem;}
   .next-target .nt-text b{display:block; font-size:0.92rem;}
 
-  #captureModal{
+  #captureModal, #settingsModal{
     position:fixed; inset:0; background:rgba(20,28,28,0.94);
     z-index:100; display:none; overflow-y:auto;
   }
-  #captureModal.open{display:block;}
+  #captureModal.open, #settingsModal.open{display:block;}
   #captureModal .overlay-body h2{font-size:1.25rem; margin-bottom:6px;}
   .capture-readout{
     background:var(--paper-dark); border:1px solid var(--line); border-radius:2px;
@@ -264,7 +265,325 @@
     display:flex; gap:10px;
   }
   .bottom-bar button{flex:1;}
+
+  /* settings button, settings sheet, welcome screen */
+  #btnSettings{width:38px; height:38px; padding:0; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; align-self:center;}
+  #btnSettings svg{width:20px; height:20px;}
+  .setting-row{display:flex; flex-direction:column; gap:6px; margin-top:20px;}
+  .setting-row label{font-size:0.8rem; color:var(--ink-soft);}
+  .setting-row select{font-family:monospace; font-size:1rem; padding:8px; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:3px;}
+  .seg{display:flex; gap:10px; flex-wrap:wrap;}
+  .seg button.active{background:var(--brass-dark); border-color:var(--brass-dark); color:var(--paper);}
+  #welcome{position:fixed; inset:0; z-index:300; background:var(--paper); display:none; overflow-y:auto;}
+  #welcome.open{display:block;}
+  .welcome-inner{max-width:520px; margin:0 auto; min-height:100%; padding:48px 24px 32px; display:flex; flex-direction:column; justify-content:center; gap:14px;}
+  .welcome-inner h1{font-size:1.7rem; line-height:1.15; text-align:center;}
+  .welcome-sub{text-align:center; font-size:0.9rem; color:var(--ink-soft); margin:0 0 8px;}
+  .welcome-inner .lang-btn{font-family:'Fraunces', Georgia, serif; font-size:1.2rem; padding:16px 14px; text-align:center;}
 </style>
+<style id="boldTheme" media="not all">
+  :root{
+    --cream:#FCF1C4; --cream-light:#FFF8DC; --cream-dark:#F1E2A6;
+    --black:#0a0a0a; --red:#DC0414; --blue:#05A4FC; --yellow:#FCF42C; --teal:#269CB4; --pink:#FC054C;
+    /* compatibility names used elsewhere in the page */
+    --paper:var(--cream); --paper-dark:var(--cream-dark); --ink:var(--black); --ink-soft:#3b3a35;
+    --brass:var(--red); --brass-dark:var(--black); --rust:var(--red); --moss:var(--teal);
+    --line:var(--black);
+    --bw:3px;
+    --pop:4px 4px 0 var(--black);
+    --display:'Archivo Black','Arial Black',Impact,sans-serif;
+    --body:'DM Sans',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+    --label:'DM Sans',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; height:100%; background:var(--black); overscroll-behavior:none;}
+  body{
+    font-family:var(--body);
+    color:var(--black);
+    display:flex; flex-direction:column;
+    max-width:520px; margin:0 auto;
+    background:var(--cream);
+    min-height:100vh;
+  }
+  h1,h2,h3{font-family:var(--display); margin:0; letter-spacing:0.005em; font-weight:400;}
+  .mono{font-family:var(--label);}
+
+  /* ---------- header: logo box, tagline bar, Mondrian corner ---------- */
+  header{
+    flex-shrink:0;
+    padding:14px 16px 12px;
+    border-bottom:4px solid var(--black);
+    background:var(--cream);
+    position:relative; z-index:20;
+    overflow:hidden;
+  }
+  header::before{ /* red disc + blue ring, top-right */
+    content:""; position:absolute; right:-34px; top:-38px; width:118px; height:118px; border-radius:50%;
+    background:var(--red); box-shadow:0 0 0 9px var(--blue), 0 0 0 12px var(--black); z-index:0;
+  }
+  header::after{ /* yellow quarter, bottom-right */
+    content:""; position:absolute; right:-26px; bottom:-30px; width:84px; height:84px; border-radius:50%;
+    background:var(--yellow); border:3px solid var(--black); z-index:0;
+  }
+  header > *{position:relative; z-index:1;}
+  header > .title-row{position:static;}
+  header .title-row{display:flex; align-items:flex-start; justify-content:flex-start; gap:10px; padding-right:78px;}
+  header h1{
+    font-size:1.18rem; line-height:1.08; text-transform:uppercase;
+    background:var(--cream-light); color:var(--black);
+    border:var(--bw) solid var(--black); padding:7px 10px 6px; box-shadow:3px 3px 0 var(--black);
+  }
+  #stopCount{
+    position:absolute; right:12px; bottom:14px; z-index:2;
+    background:var(--black); color:var(--cream-light)!important; padding:4px 7px;
+    font-size:0.78rem!important; font-weight:700; letter-spacing:0.01em; text-transform:none;
+    box-shadow:2px 2px 0 var(--yellow);
+  }
+  header .subtitle{
+    display:inline-block; font-family:var(--label); font-size:0.78rem; font-style:normal; font-weight:600;
+    letter-spacing:0.02em; text-transform:none;
+    background:var(--black); color:var(--cream-light); padding:5px 9px; margin-top:9px; max-width:100%;
+  }
+  .status-strip{display:flex; gap:14px; margin-top:10px; font-family:var(--label); font-size:0.78rem; color:var(--black); flex-wrap:wrap;}
+  .status-strip span{display:flex; align-items:center; gap:6px; font-weight:600; text-transform:none; letter-spacing:0;}
+  .dot{width:11px; height:11px; border-radius:0; background:var(--cream-dark); border:2px solid var(--black); flex-shrink:0;}
+  .dot.ok{background:var(--teal);}
+  .dot.warn{background:var(--red); border-radius:50%;}
+
+  #map{
+    width:100%; height:38vh; min-height:220px;
+    border-bottom:4px solid var(--black);
+    filter: sepia(12%) saturate(85%);
+  }
+  .heading-arrow{
+    width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    transform-origin:50% 50%;
+  }
+  .heading-arrow svg{width:100%; height:100%;}
+
+  .test-bar{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 16px; background:var(--yellow);
+    border-bottom:4px solid var(--black);
+    font-family:var(--label); font-size:0.82rem; font-weight:600; color:var(--black);
+  }
+  .test-bar label{display:flex; align-items:center; gap:8px; cursor:pointer;}
+  .test-bar input[type=checkbox], .alerts-row input[type=checkbox], .toggle-row input[type=checkbox]{
+    accent-color:var(--black); width:18px; height:18px;
+  }
+
+  main{flex:1; padding:16px 16px 110px;}
+
+  .section-label{
+    font-family:var(--label); font-weight:700; text-transform:uppercase; letter-spacing:0.1em;
+    font-size:0.74rem; color:var(--black); margin:20px 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::after{content:""; flex:1; height:4px; background:var(--black);}
+
+  /* ---------- stop cards: framed tiles with a colour block ---------- */
+  .stop-card{
+    --tile:var(--red);
+    border:var(--bw) solid var(--black); border-left:16px solid var(--tile); border-radius:0;
+    background:var(--cream-light); padding:12px 14px; margin-bottom:14px;
+    box-shadow:var(--pop);
+    display:flex; gap:12px; align-items:flex-start;
+    cursor:pointer;
+  }
+  #stopList .stop-card:nth-child(4n+2){--tile:var(--blue);}
+  #stopList .stop-card:nth-child(4n+3){--tile:var(--yellow);}
+  #stopList .stop-card:nth-child(4n+4){--tile:var(--teal);}
+  .stop-card:active{transform:translate(3px,3px); box-shadow:1px 1px 0 var(--black);}
+  .stop-card.visited{opacity:1; background:var(--cream-dark); border-left-color:#9a9384;}
+  .stop-card .stop-main{flex:1; min-width:0;}
+  .stop-card h3{font-size:1.02rem; line-height:1.15; color:var(--black);}
+  .stop-card .stop-blurb{font-size:0.85rem; color:var(--ink-soft); margin-top:5px; line-height:1.4;}
+  .stop-card .stop-meta{
+    display:flex; gap:12px; margin-top:9px; font-family:var(--label); font-weight:600; font-size:0.8rem;
+    color:var(--black); text-transform:none; letter-spacing:0;
+  }
+  .bearing-chip{
+    width:38px; height:38px; border-radius:50%!important; border:var(--bw) solid var(--black)!important; background:var(--yellow)!important;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transform-origin:50% 50%;
+  }
+  .stop-card .bearing-chip svg{width:17px; height:17px;}
+  .stop-card.visited .bearing-chip{background:var(--cream)!important;}
+
+  .empty-note{font-size:0.85rem; color:var(--ink-soft); font-style:normal; padding:6px 2px; line-height:1.45;}
+
+  /* ---------- story overlay ---------- */
+  #overlay{
+    position:fixed; inset:0; background:rgba(10,10,10,0.96);
+    z-index:100; display:none; overflow-y:auto;
+  }
+  #overlay.open{display:block;}
+  .overlay-inner{
+    max-width:520px; margin:0 auto; min-height:100%;
+    background:var(--cream); display:flex; flex-direction:column;
+    border-left:4px solid var(--black); border-right:4px solid var(--black);
+  }
+  .overlay-photo{
+    width:100%; height:44vh; min-height:200px; object-fit:cover;
+    background:var(--cream-dark); display:block;
+    border-bottom:4px solid var(--black);
+  }
+  #overlay.extra-mode .snapshot-block, #overlay.extra-mode .next-block, #overlay.extra-mode #btnFixLocation{display:none;}
+  #overlay.extra-mode .overlay-photo{height:auto; min-height:0; max-height:50vh; object-fit:contain; background:#10181a;}
+  #nextUpBanner{
+    display:none; position:fixed; left:8px; right:8px; bottom:8px; z-index:150;
+    align-items:center; gap:10px; padding:10px 12px;
+    background:var(--black); color:var(--cream-light); border:3px solid var(--yellow); border-radius:0;
+    box-shadow:4px 4px 0 var(--red); font-size:0.88rem; line-height:1.35;
+  }
+  #nextUpBanner.show{display:flex;}
+  #nextUpBanner span{flex:1;}
+  #nextUpBanner button{padding:6px 10px; font-size:0.72rem; white-space:nowrap; box-shadow:none;}
+  #nextUpBanner .ghost{color:var(--cream-light); border-color:var(--cream-light); background:transparent;}
+  #nextUpBanner .primary{background:var(--yellow); color:var(--black); border-color:var(--yellow);}
+  #nextUpBanner .pulse{
+    width:12px; height:12px; border-radius:50%; background:var(--yellow); flex:none;
+    animation:nextUpPulse 1.1s ease-in-out infinite;
+  }
+  @keyframes nextUpPulse{0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.35; transform:scale(1.5);}}
+  .alerts-row{display:flex; align-items:center; gap:9px; font-size:0.84rem; color:var(--black); margin:0 0 12px; font-weight:600;}
+  .overlay-photo.is-portrait{object-fit:contain; height:64vh; max-height:640px; background:#10181a;}
+  .overlay-photo-credit{
+    font-family:var(--label); font-size:0.74rem; color:var(--black); padding:5px 16px; text-align:right;
+    background:var(--cream-dark); border-bottom:4px solid var(--black);
+  }
+  .overlay-body{padding:20px 20px 30px;}
+  .snapshot-block{padding:14px 20px 8px; background:var(--cream-dark); border-bottom:4px solid var(--black);}
+  .snapshot-photo{height:34vh; min-height:160px; border:var(--bw) solid var(--black); margin-top:2px;}
+  .snapshot-photo.is-portrait{object-fit:contain; height:52vh; max-height:520px; background:#10181a;}
+  .overlay-body h2{
+    font-size:1.55rem; line-height:1.1; margin-bottom:12px; display:inline;
+    background:linear-gradient(transparent 58%, var(--yellow) 58%); padding:0 2px;
+  }
+  .overlay-body .overlay-text{font-size:1rem; line-height:1.62; color:var(--black); margin-top:14px;}
+  .overlay-controls{display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+
+  /* ---------- buttons ---------- */
+  button{
+    font-family:var(--label); font-size:0.84rem; font-weight:700; text-transform:none; letter-spacing:0.01em;
+    border:var(--bw) solid var(--black); background:var(--cream-light);
+    color:var(--black); padding:10px 14px; border-radius:0;
+    cursor:pointer; box-shadow:3px 3px 0 var(--black);
+  }
+  button.primary{background:var(--black); border-color:var(--black); color:var(--cream-light); box-shadow:3px 3px 0 var(--red);}
+  button.ghost{background:var(--cream-light);}
+  button.ghost.active{background:var(--red); color:var(--cream-light); border-color:var(--black);}
+  button:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--black);}
+  button:disabled{opacity:0.4; cursor:default;}
+  .mode-tag{
+    display:inline-block; font-family:var(--label); font-size:13px; font-weight:700;
+    letter-spacing:0.02em; text-transform:none; padding:4px 10px;
+    border:var(--bw) solid var(--black); border-radius:0; margin-bottom:10px;
+  }
+  .mode-tag.mode-fix{background:var(--red); color:var(--cream-light);}
+  .mode-tag.mode-new{background:var(--teal); color:var(--cream-light);}
+  .pick-banner{
+    display:none; margin:10px 14px 0;
+    background:var(--black); color:var(--cream-light);
+    padding:12px 14px; border:3px solid var(--yellow); border-radius:0;
+    box-shadow:4px 4px 0 var(--red);
+    align-items:center; justify-content:space-between; gap:10px;
+  }
+  .pick-banner.open{display:flex;}
+  .pick-banner span{font-size:14px; line-height:1.3;}
+  .pick-banner button{flex-shrink:0; padding:8px 12px; font-size:12px; box-shadow:none;}
+
+  .close-x{
+    position:sticky; top:10px; float:right; margin:10px 12px 0 0;
+    width:42px; height:42px; border-radius:50%!important; padding:0;
+    background:var(--red); color:var(--cream-light); border:var(--bw) solid var(--black);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.4rem; z-index:5; box-shadow:3px 3px 0 var(--black);
+  }
+
+  .next-block{margin-top:24px; padding-top:6px; border-top:4px solid var(--black);}
+  .next-block .section-label{margin-top:14px;}
+  .next-target{
+    display:flex; gap:12px; align-items:center;
+    background:var(--cream-light); border:var(--bw) solid var(--black); border-left:14px solid var(--blue);
+    box-shadow:var(--pop); padding:10px 12px; margin-top:10px;
+  }
+  .next-target .bearing-chip{width:42px; height:42px;}
+  .next-target .bearing-chip svg{width:20px; height:20px;}
+  .next-target .nt-text{font-size:0.86rem;}
+  .next-target .nt-text b{display:block; font-family:var(--display); font-weight:400; font-size:0.95rem;}
+
+  #captureModal, #settingsModal{
+    position:fixed; inset:0; background:rgba(10,10,10,0.96);
+    z-index:100; display:none; overflow-y:auto;
+  }
+  #captureModal.open, #settingsModal.open{display:block;}
+  #captureModal .overlay-body h2{font-size:1.3rem; margin-bottom:6px;}
+  .capture-readout{
+    background:var(--cream-dark); border:var(--bw) solid var(--black); border-radius:0;
+    padding:10px 12px; font-family:var(--label); font-size:0.86rem; line-height:1.6; margin:12px 0 16px; white-space:pre-line;
+  }
+  .capture-tips{
+    border:var(--bw) solid var(--black); border-left:14px solid var(--blue); border-radius:0; background:var(--cream-light);
+    box-shadow:var(--pop); padding:9px 12px; margin:0 0 14px; font-size:0.86rem; line-height:1.5;
+  }
+  .capture-tips summary{cursor:pointer; font-family:var(--label); font-weight:700; text-transform:none; letter-spacing:0; font-size:0.9rem; color:var(--black);}
+  .capture-tips ol{margin:8px 0 2px 18px; padding:0;}
+  .capture-tips li{margin-bottom:6px;}
+  .acc-good{color:var(--teal);} .acc-ok{color:#8a6a00;} .acc-bad{color:var(--red);}
+  .capture-label{display:block; font-family:var(--label); font-weight:700; text-transform:none; letter-spacing:0; font-size:0.84rem; color:var(--black); margin:14px 0 5px;}
+  #captureName, #captureNotes{
+    width:100%; font-family:var(--body); font-size:0.95rem;
+    border:var(--bw) solid var(--black); border-radius:0; background:var(--cream-light);
+    padding:9px 10px; color:var(--black); resize:vertical;
+  }
+  #captureName:focus, #captureNotes:focus{outline:3px solid var(--blue); outline-offset:1px;}
+  .toggle-row{display:flex; align-items:center; gap:9px; cursor:pointer; font-size:0.9rem; color:var(--black); margin-top:2px;}
+
+  #toast{
+    position:fixed; left:50%; bottom:18px; transform:translateX(-50%) translateY(20px);
+    background:var(--black); color:var(--cream-light); font-family:var(--label); font-weight:600;
+    font-size:0.86rem; padding:10px 16px; border:3px solid var(--yellow); border-radius:0; max-width:88%;
+    box-shadow:4px 4px 0 var(--red);
+    opacity:0; transition:opacity 0.25s ease, transform 0.25s ease; z-index:200;
+    pointer-events:none; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  #nextUpBanner.show ~ #toast{bottom:84px;}
+
+  .bottom-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    max-width:520px; margin:0 auto;
+    background:var(--cream); border-top:4px solid var(--black);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:flex; gap:8px;
+  }
+  .bottom-bar button{flex:1; padding:9px 4px; font-size:0.76rem; letter-spacing:0; line-height:1.15;}
+
+  /* settings button, settings sheet, welcome screen */
+  #btnSettings{position:absolute; top:12px; right:12px; z-index:3; width:42px; height:42px; padding:0; border-radius:50%; background:var(--cream-light); display:flex; align-items:center; justify-content:center;}
+  #btnSettings svg{width:22px; height:22px;}
+  .setting-row{display:flex; flex-direction:column; gap:7px; margin-top:22px;}
+  .setting-row label{font-weight:700; font-size:0.9rem; color:var(--black);}
+  .setting-row select{font-family:var(--label); font-size:1rem; font-weight:600; padding:9px 10px; background:var(--cream-light); color:var(--black); border:var(--bw) solid var(--black); border-radius:0;}
+  .seg button.active{background:var(--black); color:var(--cream-light); border-color:var(--black); box-shadow:3px 3px 0 var(--red);}
+  #welcome{background:var(--cream);}
+  #welcome::before{content:""; position:absolute; right:-60px; top:-60px; width:210px; height:210px; border-radius:50%; background:var(--red); box-shadow:0 0 0 14px var(--blue), 0 0 0 18px var(--black);}
+  #welcome::after{content:""; position:absolute; left:-50px; bottom:-50px; width:150px; height:150px; border-radius:50%; background:var(--yellow); border:4px solid var(--black);}
+  .welcome-inner{position:relative; z-index:1; padding-top:56px;}
+  .welcome-inner h1{font-size:1.5rem; line-height:1.1; text-transform:uppercase; text-align:left; background:var(--cream-light); border:var(--bw) solid var(--black); box-shadow:4px 4px 0 var(--black); padding:10px 12px; margin-right:70px;}
+  .welcome-sub{font-family:var(--label); font-weight:700; background:var(--black); color:var(--cream-light)!important; padding:6px 10px; display:inline-block; align-self:flex-start; font-size:0.85rem!important;}
+  .welcome-inner .lang-btn{font-size:1.2rem; padding:15px 14px; text-align:left; background:var(--cream-light);}
+  .welcome-inner .lang-btn:nth-of-type(6n+1){border-left:16px solid var(--red);}
+  .welcome-inner .lang-btn:nth-of-type(6n+2){border-left:16px solid var(--blue);}
+  .welcome-inner .lang-btn:nth-of-type(6n+3){border-left:16px solid var(--yellow);}
+  .welcome-inner .lang-btn:nth-of-type(6n+4){border-left:16px solid var(--teal);}
+  .welcome-inner .lang-btn:nth-of-type(6n+5){border-left:16px solid var(--pink);}
+  .welcome-inner .lang-btn:nth-of-type(6n+6){border-left:16px solid var(--black);}
+
+</style>
+<script>try{if(localStorage.getItem("ofg-look")==="bold")document.getElementById("boldTheme").media="all";}catch(e){}</script>
 </head>
 <body>
 
@@ -272,16 +591,13 @@
   <div class="title-row">
     <h1 id="appTitleText">Steve's Audio Field Guide to Ottawa</h1>
     <span class="mono" style="font-size:0.72rem; color:var(--ink-soft);" id="stopCount">0/0 found</span>
+    <button id="btnSettings" class="ghost" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
   </div>
   <div class="subtitle" id="appSubtitleText">An audio walking guide to Ottawa — pilot build</div>
   <div class="status-strip">
     <span><i class="dot" id="dotGps"></i><span id="gpsLabel">GPS: waiting</span></span>
     <span><i class="dot" id="dotCompass"></i><span id="compassLabel">Compass: waiting</span></span>
     <span><i class="dot" id="dotAudio"></i><span id="audioLabel">Voice: ready</span></span>
-  </div>
-  <div class="lang-row">
-    <label for="langSelect" class="mono" style="font-size:0.72rem; color:var(--ink-soft);" id="langRowLabel">Narration language</label>
-    <select id="langSelect"></select>
   </div>
 </header>
 
@@ -430,12 +746,46 @@
   </div>
 </div>
 
+<div id="settingsModal">
+  <div class="overlay-inner">
+    <button class="close-x" id="closeSettings" aria-label="Close">&times;</button>
+    <div class="overlay-body">
+      <h2 id="settingsTitle">Settings</h2>
+      <div class="setting-row">
+        <label for="langSelect" id="langRowLabel">Language</label>
+        <select id="langSelect"></select>
+      </div>
+      <div class="setting-row">
+        <label id="lookLabel">Look</label>
+        <div class="seg">
+          <button class="ghost" id="lookClassic">Classic brass</button>
+          <button class="ghost" id="lookBold">Bold colour</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="welcome">
+  <div class="welcome-inner">
+    <h1>Steve's Audio Field Guide to Ottawa</h1>
+    <p class="welcome-sub">Language · Langue · Idioma · Sprache · Idioma · 语言</p>
+    <div id="welcomeButtons" style="display:contents"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 (function(){
   "use strict";
+
+  /* ---------- Look (theme): "classic" brass or "bold" colour, chosen in Settings ---------- */
+  const LOOK = (function(){ try { return localStorage.getItem("ofg-look") === "bold" ? "bold" : "classic"; } catch(e){ return "classic"; } })();
+  const PAL = LOOK === "bold"
+    ? {edge:"#0a0a0a", zone:"#DC0414", dot:"#FCF42C", edge2:"#0a0a0a", arrow:"#DC0414", arrowStroke:"#0a0a0a", userEdge:"#0a0a0a", userFill:"#05A4FC", chipDark:"#0a0a0a", chipLight:"#DC0414"}
+    : {edge:"#7d5a20", zone:"#8a5a12", dot:"#a3752c", edge2:"#5e4012", arrow:"#a13d2c", arrowStroke:"#1c2b2c", userEdge:"#a13d2c", userFill:"#c65a3f", chipDark:"#7d5a20", chipLight:"#a3752c"};
 
   /* ---------- Sample pilot data (6 Ottawa stops, real coordinates) ---------- */
   /* ---------- Translations: name + script per stop, per language ---------- */
@@ -2132,6 +2482,38 @@
       "de": "Sprache",
       "pt": "Idioma",
       "zh": "语言"
+    },
+    "settingsTitle": {
+      "en": "Settings",
+      "fr": "Paramètres",
+      "es": "Ajustes",
+      "de": "Einstellungen",
+      "pt": "Configurações",
+      "zh": "设置"
+    },
+    "lookLabel": {
+      "en": "Look",
+      "fr": "Apparence",
+      "es": "Aspecto",
+      "de": "Darstellung",
+      "pt": "Aparência",
+      "zh": "外观"
+    },
+    "lookClassic": {
+      "en": "Classic brass",
+      "fr": "Laiton classique",
+      "es": "Latón clásico",
+      "de": "Klassisch Messing",
+      "pt": "Latão clássico",
+      "zh": "经典黄铜"
+    },
+    "lookBold": {
+      "en": "Bold colour",
+      "fr": "Couleurs vives",
+      "es": "Colores vivos",
+      "de": "Kräftige Farben",
+      "pt": "Cores vivas",
+      "zh": "鲜艳色彩"
     },
     "testMode": {
       "en": "Test mode — tap the map to simulate your position",
@@ -4043,10 +4425,10 @@
         // is its own independent circle, with no connecting outline drawn.
         pts.forEach((p, i) => {
           const range = L.circle([p.lat, p.lon], {
-            radius: loc.radius, color:"#7d5a20", weight:2, fillColor:"#8a5a12", fillOpacity:0.38
+            radius: loc.radius, color:PAL.edge, weight:2, fillColor:PAL.zone, fillOpacity:0.38
           }).addTo(state.map).bindPopup(localized(loc, "name"));
           const center = L.circleMarker([p.lat, p.lon], {
-            radius:4, color:"#7d5a20", weight:1.5, fillColor:"#a3752c", fillOpacity:0.95
+            radius:4, color:PAL.edge, weight:1.5, fillColor:PAL.dot, fillOpacity:0.95
           }).addTo(state.map);
           range.on("click", onClick);
           center.on("click", onClick);
@@ -4061,19 +4443,19 @@
         const latlngs = pts.map(p => [p.lat, p.lon]);
         const bandPath = pts.length === 2 ? latlngs : latlngs.concat([latlngs[0]]);
         const band = L.polyline(bandPath, {
-          pane:"zonePane", color:"#8a5a12", weight:2, opacity:1, lineCap:"round", lineJoin:"round", interactive:false
+          pane:"zonePane", color:PAL.zone, weight:2, opacity:1, lineCap:"round", lineJoin:"round", interactive:false
         }).addTo(state.map);
         if (pts.length > 2){
-          L.polygon(latlngs, {pane:"zonePane", stroke:false, fillColor:"#8a5a12", fillOpacity:1, interactive:false}).addTo(state.map);
+          L.polygon(latlngs, {pane:"zonePane", stroke:false, fillColor:PAL.zone, fillOpacity:1, interactive:false}).addTo(state.map);
         }
         state.bufferBands.push({layer:band, radius:loc.radius});
         const outline = pts.length === 2
-          ? L.polyline(latlngs, {color:"#7d5a20", weight:3, opacity:0.85}).addTo(state.map).bindPopup(localized(loc, "name"))
-          : L.polygon(latlngs, {color:"#5e4012", weight:2, fillColor:"#000", fillOpacity:0}).addTo(state.map).bindPopup(localized(loc, "name"));
+          ? L.polyline(latlngs, {color:PAL.edge, weight:3, opacity:0.85}).addTo(state.map).bindPopup(localized(loc, "name"))
+          : L.polygon(latlngs, {color:PAL.edge2, weight:2, fillColor:"#000", fillOpacity:0}).addTo(state.map).bindPopup(localized(loc, "name"));
         outline.on("click", onClick);
         pts.forEach(p => {
           const dot = L.circleMarker([p.lat, p.lon], {
-            radius:3, color:"#7d5a20", weight:1.5, fillColor:"#a3752c", fillOpacity:0.95
+            radius:3, color:PAL.edge, weight:1.5, fillColor:PAL.dot, fillOpacity:0.95
           }).addTo(state.map);
           dot.on("click", onClick);
         });
@@ -4091,7 +4473,7 @@
     state.map.on("zoom zoomend moveend", sizeBands);
     sizeBands();
 
-    const arrowSvg = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L18 20 L12 16 L6 20 Z" fill="#a13d2c" stroke="#1c2b2c" stroke-width="1"/></svg>`;
+    const arrowSvg = `<svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L18 20 L12 16 L6 20 Z" fill="${PAL.arrow}" stroke="${PAL.arrowStroke}" stroke-width="1"/></svg>`;
     state.headingIcon = L.divIcon({
       className: "",
       html: `<div class="heading-arrow" id="userArrow">${arrowSvg}</div>`,
@@ -4142,7 +4524,7 @@
     cancelPickMode(true);
     if (state.pickMarker){ state.map.removeLayer(state.pickMarker); }
     state.pickMarker = L.circleMarker([lat, lon], {
-      radius:8, weight:2, color:"#a13d2c", fillColor:"#c65a3f", fillOpacity:0.9
+      radius:8, weight:2, color:PAL.userEdge, fillColor:PAL.userFill, fillOpacity:0.9
     }).addTo(state.map);
     state.manualPick = {lat: lat, lon: lon};
     if (fixTarget){
@@ -4423,7 +4805,7 @@
           </div>
         </div>
         <div class="bearing-chip" style="transform:rotate(${chipRotation}deg)">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L17 20 L12 16 L7 20 Z" fill="#7d5a20"/></svg>
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L17 20 L12 16 L7 20 Z" fill="${PAL.chipDark}"/></svg>
         </div>
       `;
       list.appendChild(card);
@@ -4526,7 +4908,7 @@
       ${faceNote}
       <div class="next-target">
         <div class="bearing-chip" style="transform:rotate(${rel}deg)">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L17 20 L12 16 L7 20 Z" fill="#a3752c"/></svg>
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 L17 20 L12 16 L7 20 Z" fill="${PAL.chipLight}"/></svg>
         </div>
         <div class="nt-text">
           <b>${localized(nearest, "name")}</b>
@@ -5051,6 +5433,11 @@
     setText("appTitleText", "appTitle");
     setText("appSubtitleText", "appSubtitle");
     setText("langRowLabel", "narrationLanguage");
+    setText("settingsTitle", "settingsTitle");
+    setText("lookLabel", "lookLabel");
+    setText("lookClassic", "lookClassic");
+    setText("lookBold", "lookBold");
+    const sb = document.getElementById("btnSettings"); if (sb) sb.setAttribute("aria-label", t("settingsTitle"));
     setText("testModeLabelText", "testMode");
     setText("nearestToYouLabel", "nearestToYou");
     setText("alertsLabelText", "alertsLabel");
@@ -5142,6 +5529,40 @@
       }
       toast(t("narrationLanguageToast", {lang: LANGUAGES[state.lang].label}));
     });
+
+    // Settings sheet + look switch
+    const settingsModal = document.getElementById("settingsModal");
+    document.getElementById("btnSettings").addEventListener("click", () => settingsModal.classList.add("open"));
+    document.getElementById("closeSettings").addEventListener("click", () => settingsModal.classList.remove("open"));
+    document.getElementById(LOOK === "bold" ? "lookBold" : "lookClassic").classList.add("active");
+    [["lookClassic","classic"],["lookBold","bold"]].forEach(([id, val]) => {
+      document.getElementById(id).addEventListener("click", () => {
+        if (val === LOOK) return;
+        try { localStorage.setItem("ofg-look", val); } catch(err){}
+        location.reload();
+      });
+    });
+
+    // First-run language screen (also reachable with ?welcome=1 for testing)
+    let savedLang = null;
+    try { savedLang = localStorage.getItem("ofg-lang"); } catch(err){}
+    if (!savedLang || /[?&]welcome=1/.test(location.search)){
+      const wb = document.getElementById("welcomeButtons");
+      const welcome = document.getElementById("welcome");
+      Object.keys(LANGUAGES).forEach(code => {
+        const b = document.createElement("button");
+        b.className = "ghost lang-btn";
+        b.setAttribute("lang", code);
+        b.textContent = LANGUAGES[code].label;
+        b.addEventListener("click", () => {
+          langSelect.value = code;
+          langSelect.dispatchEvent(new Event("change"));
+          welcome.classList.remove("open");
+        });
+        wb.appendChild(b);
+      });
+      welcome.classList.add("open");
+    }
 
     document.getElementById("testModeToggle").addEventListener("change", (e) => {
       state.testMode = e.target.checked;

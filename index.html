@@ -784,7 +784,7 @@
   /* ---------- Look (theme): "classic" brass or "bold" colour, chosen in Settings ---------- */
   const LOOK = (function(){ try { return localStorage.getItem("ofg-look") === "bold" ? "bold" : "classic"; } catch(e){ return "classic"; } })();
   const PAL = LOOK === "bold"
-    ? {edge:"#0a0a0a", zone:"#DC0414", dot:"#FCF42C", edge2:"#0a0a0a", arrow:"#DC0414", arrowStroke:"#0a0a0a", userEdge:"#0a0a0a", userFill:"#05A4FC", chipDark:"#0a0a0a", chipLight:"#DC0414"}
+    ? {edge:"#0a0a0a", zone:"#05A4FC", dot:"#FCF42C", edge2:"#0a0a0a", arrow:"#DC0414", arrowStroke:"#0a0a0a", userEdge:"#0a0a0a", userFill:"#05A4FC", chipDark:"#0a0a0a", chipLight:"#DC0414"}
     : {edge:"#7d5a20", zone:"#8a5a12", dot:"#a3752c", edge2:"#5e4012", arrow:"#a13d2c", arrowStroke:"#1c2b2c", userEdge:"#a13d2c", userFill:"#c65a3f", chipDark:"#7d5a20", chipLight:"#a3752c"};
 
   /* ---------- Sample pilot data (6 Ottawa stops, real coordinates) ---------- */

@@ -344,7 +344,7 @@
     letter-spacing:0.02em; text-transform:none;
     background:var(--black); color:var(--cream-light); padding:5px 9px; margin-top:9px; max-width:100%;
   }
-  .status-strip{display:flex; gap:14px; margin-top:10px; font-family:var(--label); font-size:0.78rem; color:var(--black); flex-wrap:wrap;}
+  .status-strip{display:flex; gap:6px 14px; margin-top:10px; padding-right:118px; font-family:var(--label); font-size:0.78rem; color:var(--black); flex-wrap:wrap;}
   .status-strip span{display:flex; align-items:center; gap:6px; font-weight:600; text-transform:none; letter-spacing:0;}
   .dot{width:11px; height:11px; border-radius:0; background:var(--cream-dark); border:2px solid var(--black); flex-shrink:0;}
   .dot.ok{background:var(--teal);}
@@ -4453,7 +4453,8 @@
           ? L.polyline(latlngs, {color:PAL.edge, weight:3, opacity:0.85}).addTo(state.map).bindPopup(localized(loc, "name"))
           : L.polygon(latlngs, {color:PAL.edge2, weight:2, fillColor:"#000", fillOpacity:0}).addTo(state.map).bindPopup(localized(loc, "name"));
         outline.on("click", onClick);
-        pts.forEach(p => {
+        // Only the ends of a line (both points) or the start of an outline (one point) get a dot.
+        (pts.length === 2 ? pts : [pts[0]]).forEach(p => {
           const dot = L.circleMarker([p.lat, p.lon], {
             radius:3, color:PAL.edge, weight:1.5, fillColor:PAL.dot, fillOpacity:0.95
           }).addTo(state.map);

@@ -5369,13 +5369,10 @@
       }
     });
 
-    // Tourist helper spots: teal near ring + faint dashed far ring.
+    // Tourist helper spots: only the spot itself is drawn (a teal dot). The trigger rings still work, but are not shown.
     HELPERS.forEach(h => {
-      L.circle([h.lat, h.lon], {radius:h.farRadius, color:PAL.helper, weight:1, dashArray:"4 6", fill:false, interactive:false}).addTo(state.map);
-      const near = L.circle([h.lat, h.lon], {radius:h.nearRadius, color:PAL.helper, weight:2, fillColor:PAL.helper, fillOpacity:0.3})
+      const dot = L.circleMarker([h.lat, h.lon], {radius:7, color:"#fff", weight:2, fillColor:PAL.helper, fillOpacity:1})
         .addTo(state.map).bindPopup(localized(h, "name"));
-      const dot = L.circleMarker([h.lat, h.lon], {radius:5, color:"#fff", weight:2, fillColor:PAL.helper, fillOpacity:1}).addTo(state.map);
-      near.on("click", () => openHelper(h.id));
       dot.on("click", () => openHelper(h.id));
     });
 

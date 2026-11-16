@@ -5096,6 +5096,8 @@
   const HELPERS = [
     { id:"capital-infocentre", type:"infocentre", lat:45.423024, lon:-75.697850, farRadius:300, nearRadius:30,
       street:{en:"Wellington Street", fr:"rue Wellington", es:"calle Wellington", de:"Wellington Street", pt:"Rua Wellington", zh:"Wellington 街"},
+      noun:{en:"a former infocentre site", fr:"un ancien emplacement de centre d'information", es:"un lugar donde estuvo un centro de información", de:"ein ehemaliger Standort eines Informationszentrums", pt:"um antigo local de centro de informações", zh:"一处原游客信息中心旧址"},
+      here:{en:"You are at the site of the former Capital Infocentre.", fr:"Vous êtes à l'emplacement de l'ancien Centre d'information de la capitale.", es:"Está en el lugar donde estuvo el Centro de Información de la Capital.", de:"Sie sind am ehemaligen Standort des Capital Infocentre.", pt:"Você está no local do antigo Centro de Informações da Capital.", zh:"您所在的位置是原首都游客信息中心旧址。"},
       name:"Capital Infocentre",
       blurb:"The site of the National Capital Commission's Capital Infocentre, across Wellington Street from Parliament Hill.",
       script:"You are on Wellington Street, across from Parliament Hill, at the site of the Capital Infocentre, the National Capital Commission's visitor information centre. The centre was renovated in the mid-1990s, and in the late 1990s it displayed a millennium clock counting down to January 1, 2000. After a 2006 review of the Commission's mandate, the centre was closed and replaced with a kiosk.",
@@ -5113,12 +5115,12 @@
     const dir = (HELPER_DIRS[state.lang] || HELPER_DIRS.en)[Math.round(brg / 45) % 8];
     const tpl = HELPER_FAR_TEMPLATE[state.lang] || HELPER_FAR_TEMPLATE.en;
     const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
-    return tpl.replace("{noun}", helperLangPick(HELPER_TYPES[h.type].noun))
+    return tpl.replace("{noun}", helperLangPick(h.noun || HELPER_TYPES[h.type].noun))
               .replace("{dist}", helperDistanceText(d))
               .replace("{dir}", dir).replace("{Dir}", cap(dir))
               .replace("{street}", helperLangPick(h.street));
   }
-  function helperHereText(h){ return helperLangPick(HELPER_TYPES[h.type].here); }
+  function helperHereText(h){ return helperLangPick(h.here || HELPER_TYPES[h.type].here); }
 
   /* ---------- State ---------- */
   const state = {

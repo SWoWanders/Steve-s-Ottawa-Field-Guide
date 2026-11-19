@@ -2141,6 +2141,33 @@
         "faceLabel": "这排旗帜"
       }
     },
+    "food-court": {
+      "fr": {
+        "name": "Aire de restauration",
+        "blurb": "Une aire de restauration sur la rue Sparks, un endroit pratique pour manger un morceau ou utiliser les toilettes.",
+        "script": "Voici une aire de restauration sur la rue Sparks, un endroit pratique pour manger un morceau ou utiliser les toilettes."
+      },
+      "es": {
+        "name": "Zona de comidas",
+        "blurb": "Una zona de comidas en la calle Sparks, un lugar práctico para comer algo o usar los aseos.",
+        "script": "Esta es una zona de comidas en la calle Sparks, un lugar práctico para comer algo o usar los aseos."
+      },
+      "de": {
+        "name": "Food-Court",
+        "blurb": "Ein Food-Court an der Sparks Street, ein praktischer Ort für eine Mahlzeit oder um die Toilette zu benutzen.",
+        "script": "Dies ist ein Food-Court an der Sparks Street, ein praktischer Ort für eine Mahlzeit oder um die Toilette zu benutzen."
+      },
+      "pt": {
+        "name": "Praça de alimentação",
+        "blurb": "Uma praça de alimentação na Rua Sparks, um lugar prático para comer algo ou usar o banheiro.",
+        "script": "Esta é uma praça de alimentação na Rua Sparks, um lugar prático para comer algo ou usar o banheiro."
+      },
+      "zh": {
+        "name": "美食广场",
+        "blurb": "Sparks 街上的一处美食广场,是方便用餐或使用洗手间的好地方。",
+        "script": "这里是Sparks 街上的一处美食广场,是方便用餐或使用洗手间的好地方。"
+      }
+    },
     "capital-infocentre": {
       "fr": {
         "name": "Centre d'information de la capitale",
@@ -5816,6 +5843,11 @@
       noun:{en:"a phone charging station", fr:"une borne de recharge pour téléphones", es:"un punto de carga para teléfonos", de:"eine Handy-Ladestation", pt:"um ponto de recarga para celulares", zh:"一处手机充电点"},
       here:{en:"You are in close proximity to a phone charging area.", fr:"Vous êtes tout près d'une borne de recharge pour téléphones.", es:"Está muy cerca de un punto de carga para teléfonos.", de:"Sie sind ganz in der Nähe einer Handy-Ladestation.", pt:"Você está bem perto de um ponto de recarga para celulares.", zh:"您就在手机充电点附近。"}
     },
+    foodcourt: {
+      label:{en:"Food court", fr:"Aire de restauration", es:"Zona de comidas", de:"Food-Court", pt:"Praça de alimentação", zh:"美食广场"},
+      noun:{en:"a food court", fr:"une aire de restauration", es:"una zona de comidas", de:"ein Food-Court", pt:"uma praça de alimentação", zh:"一处美食广场"},
+      here:{en:"You are close to a food court, a handy place to grab something to eat.", fr:"Vous êtes tout près d'une aire de restauration, un endroit pratique pour manger un morceau.", es:"Está muy cerca de una zona de comidas, un lugar práctico para tomar algo.", de:"Sie sind ganz in der Nähe eines Food-Courts, einem praktischen Ort für eine Mahlzeit.", pt:"Você está bem perto de uma praça de alimentação, um lugar prático para comer algo.", zh:"您就在美食广场附近,这里是方便用餐的好地方。"}
+    },
     citymap: {
       label:{en:"3D city map", fr:"Carte 3D de la ville", es:"Mapa 3D de la ciudad", de:"3D-Stadtkarte", pt:"Mapa 3D da cidade", zh:"城市3D地图"},
       noun:{en:"a 3D city map", fr:"une carte 3D de la ville", es:"un mapa 3D de la ciudad", de:"eine 3D-Stadtkarte", pt:"um mapa 3D da cidade", zh:"一幅城市3D地图"},
@@ -5850,6 +5882,12 @@
       name:"Capital Infocentre",
       blurb:"The site of the National Capital Commission's Capital Infocentre, across Wellington Street from Parliament Hill.",
       script:"You are on Wellington Street, across from Parliament Hill, at the site of the Capital Infocentre, the National Capital Commission's visitor information centre. The centre was renovated in the mid-1990s, and in the late 1990s it displayed a millennium clock counting down to January 1, 2000. After a 2006 review of the Commission's mandate, the centre was closed and replaced with a kiosk.",
+      noWebPhoto:true },
+    { id:"food-court", type:"foodcourt", lat:45.420603, lon:-75.701321, farRadius:300, nearRadius:30,
+      street:{en:"Sparks Street", fr:"rue Sparks", es:"calle Sparks", de:"Sparks Street", pt:"Rua Sparks", zh:"Sparks 街"},
+      name:"Food Court",
+      blurb:"A food court on Sparks Street, a handy place to grab something to eat or use the washroom.",
+      script:"This is a food court on Sparks Street, a handy place to grab something to eat or use the washroom.",
       noWebPhoto:true }
   ];
   function helperLangPick(map){ return map[state.lang] || map.en; }

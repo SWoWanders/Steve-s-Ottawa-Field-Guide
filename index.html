@@ -7835,16 +7835,19 @@
     utter.onerror = (e) => {
       if (myId !== state.utterId) return;
       state.speaking = false;
-      const missingVoice = e && (e.error === "language-unavailable" || e.error === "voice-unavailable" || e.error === "synthesis-unavailable");
-      if (allowFallback && missingVoice){
-        toast(t("voiceFallbackToast"));
+      const code = (e && e.error) || "";
+      const missingVoice = code === "language-unavailable" || code === "voice-unavailable" || code === "synthesis-unavailable";
+      const cancelled = code === "canceled" || code === "interrupted";
+      // Retry once with the phone's default voice after any real failure, not only a missing voice.
+      if (allowFallback && !cancelled){
+        if (missingVoice) toast(t("voiceFallbackToast"));
         speakWithLang(text, null, false);
         return;
       }
       state.narrationDone = true; state.welcomePlaying = false;
       helperSpeechDone();
       setDot("dotAudio","warn"); setVoiceStatus("voiceError");
-      toast(t("ttsFailedToast"));
+      toast(t("ttsFailedToast") + (code ? " (" + code + ")" : ""));
       updatePlaybackButtons();
       checkGeofences();
     };
